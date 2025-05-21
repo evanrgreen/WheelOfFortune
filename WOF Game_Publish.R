@@ -26,7 +26,14 @@ ui <- fluidPage(
       h3(textOutput("revealed_answer"), style = "color: blue;"),
       h3(textOutput("vowels_remaining"), style = "color: red;")
     )
-  )
+  ),
+  tags$script(HTML("
+    $(document).on('keydown', function (e) {
+      if (e.key === 'Enter') {
+        $('#guess').click();
+      }
+    });
+  "))
 )
 
 # Define the server logic
