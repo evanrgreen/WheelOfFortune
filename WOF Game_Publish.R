@@ -137,7 +137,7 @@ server <- function(input, output, session) {
         values$feedback_message <- "" # Clear feedback if the letter is correct
       })
       # Check if all vowels are revealed
-      if (~ any(clue_chars[~ values$revealed_positions] %in% c("A", "E", "I", "O", "U"))) {
+      if (all(values$revealed_positions[which(clue_chars %in% c("A", "E", "I", "O", "U"))])) {
         values$vowels_remaining <- FALSE
       }
     } else {
