@@ -1,8 +1,8 @@
 library(shiny)
 
 # Load dataset
-clues_data <- read.csv("all_recent_puzzles.csv", as.is = T)
-clues_data <- clues_data[, 1:2]
+clues_data <- read.csv("updated_scrape.csv", as.is = T)
+clues_data <- clues_data[, 1:5]
 names(clues_data)[1] <- "Clue"
 
 # Define the UI
@@ -41,7 +41,8 @@ server <- function(input, output, session) {
     wrong_letters = "Used Letters: ",
     feedback_timer = NULL,
     revealed_answer = NULL,
-    vowels_remaining = TRUE
+    vowels_remaining = TRUE,
+    round = NULL
   )
 
   # Helper function: Format the clue with blanks and punctuation preserved
@@ -66,7 +67,7 @@ server <- function(input, output, session) {
     random_row <- clues_data[sample(nrow(clues_data), 1), ]
     random_category <- ifelse(is.na(random_row$Category) || random_row$Category == "", "Uncategorized", random_row$Category)
     random_clue <- ifelse(is.na(random_row$Clue) || random_row$Clue == "" || nchar(random_row$Clue) == 0, "NO CLUE AVAILABLE", random_row$Clue)
-
+    random_round <- ifelse(is.na(random_row$Round) || random_row$Round == "", "Uncategorized", random_row$Round)
     isolate({
       values$current_category <- random_category
       values$current_clue <- toupper(as.character(random_clue))
@@ -76,6 +77,7 @@ server <- function(input, output, session) {
       values$wrong_letters <- "Used letters: "
       values$revealed_answer <- NULL
       values$vowels_remaining <- TRUE
+      values$round <- random_round
     })
   }
 
@@ -85,7 +87,7 @@ server <- function(input, output, session) {
   # Display the category
   output$category_display <- renderText({
     req(values$current_category)
-    paste("Category:", values$current_category)
+    paste("Category:", values$current_category, " Round: ", values$round)
   })
 
   # Display the clue as HTML to preserve spaces
