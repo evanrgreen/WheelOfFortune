@@ -12,7 +12,7 @@ all_words <- clues_data %>% # keeping the category with the word
 words_to_keep <- all_words %>%
   count(Puzzle, sort = TRUE) %>%
   filter(n >= 20) %>% # in at least 20 puzzles
-  filter(nchar(Puzzle) >= 3) # at least 3 letters long
+  filter(nchar(Puzzle) >= 4) # at least 3 letters long
 
 clues_data <- all_words %>%
   filter(Puzzle %in% words_to_keep$Puzzle)
