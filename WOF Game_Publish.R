@@ -7,9 +7,86 @@ names(clues_data)[1] <- "Clue"
 
 # Define the UI
 ui <- fluidPage(
+  tags$head(
+    tags$style(HTML("
+      .letter-box {
+        display: inline-block;
+        width: 50px;
+        height: 60px;
+        margin: 2px;
+        border: 3px solid #2C3E50;
+        border-radius: 5px;
+        text-align: center;
+        line-height: 60px;
+        font-size: 32px;
+        font-weight: bold;
+        background-color: #FFFFFF;
+        color: #000000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        vertical-align: middle;
+      }
+
+      .blank-box {
+        display: inline-block;
+        width: 50px;
+        height: 60px;
+        margin: 2px;
+        border: 3px solid #BDC3C7;
+        border-radius: 5px;
+        text-align: center;
+        line-height: 60px;
+        font-size: 32px;
+        font-weight: bold;
+        background-color: #ECF0F1;
+        color: #34495E;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        vertical-align: middle;
+      }
+
+      .space-separator {
+        display: inline-block;
+        width: 20px;
+        height: 60px;
+        vertical-align: middle;
+      }
+
+      .punctuation {
+        display: inline-block;
+        margin: 0 5px;
+        font-size: 32px;
+        font-weight: bold;
+        color: #FFFFFF;
+        vertical-align: middle;
+        line-height: 60px;
+      }
+
+      .puzzle-container {
+        background-color: #22B016;
+        padding: 30px;
+        border-radius: 10px;
+        margin: 20px 0;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        line-height: 70px;
+      }
+
+      .main-panel {
+        background-color: #ECF0F1;
+        padding: 20px;
+        border-radius: 10px;
+      }
+
+      .sidebar-panel {
+        background-color: #BDC3C7;
+        padding: 20px;
+        border-radius: 10px;
+      }
+    "))
+  ),
   titlePanel("Wheel of Fortune Puzzle Game"),
   sidebarLayout(
     sidebarPanel(
+      class = "sidebar-panel",
       textInput("letter_guess", "Enter a Letter:", ""),
       actionButton("guess", "Guess"),
       actionButton("reveal", "Reveal Answer"),
@@ -18,11 +95,15 @@ ui <- fluidPage(
       textOutput("wrong"),
       textOutput("feedback"),
       br(),
-      print("This game gives you a random puzzle from Wheel of Fortune Seasons 30 - 42. Correct letter guesses will appear in the puzzle. Incorrect guesses will show in the 'Used Letters' section. Made by Kira Tebbe.")
+      p("This game gives you a random puzzle from Wheel of Fortune Seasons 30 - 42. Correct letter guesses will appear in the puzzle. Incorrect guesses will show in the 'Used Letters' section. Made by Kira Tebbe.")
     ),
     mainPanel(
+      class = "main-panel",
       h3(textOutput("category_display")),
-      h3(htmlOutput("clue_display")),
+      div(
+        class = "puzzle-container",
+        htmlOutput("clue_display")
+      ),
       h3(textOutput("revealed_answer"), style = "color: blue;"),
       h3(textOutput("vowels_remaining"), style = "color: red;")
     )
@@ -46,27 +127,26 @@ server <- function(input, output, session) {
     revealed_positions = NULL,
     feedback_message = "",
     wrong_letters = "Used Letters: ",
-    feedback_timer = NULL,
     revealed_answer = NULL,
     vowels_remaining = TRUE,
     round = NULL
   )
 
-  # Helper function: Format the clue with blanks and punctuation preserved
+  # Helper function: Format the clue with boxes around letters
   format_clue <- function(clue, revealed_positions) {
     clue_chars <- strsplit(clue, "")[[1]]
     formatted <- sapply(seq_along(clue_chars), function(i) {
       if (clue_chars[i] == " ") {
-        HTML("&nbsp;&nbsp;") # Add chunky spaces
-      } else if (clue_chars[i] %in% c("'", "-", ",", "!", "?", "&")) {
-        clue_chars[i] # Keep punctuation visible
+        '<span class="space-separator"></span>'
+      } else if (clue_chars[i] %in% c("'", "-", ",", "!", "?", "&", ".", ":", ";")) {
+        paste0('<span class="punctuation">', clue_chars[i], "</span>")
       } else if (revealed_positions[i]) {
-        paste0(" ", clue_chars[i], " ") # Reveal the letter
+        paste0('<span class="letter-box">', clue_chars[i], "</span>")
       } else {
-        " _ " # Show blanks for unrevealed letters
+        '<span class="blank-box"></span>'
       }
     })
-    paste(formatted, collapse = "") # Combine everything into a single string
+    paste(formatted, collapse = "")
   }
 
   # Function to reset the game with a new puzzle
@@ -112,6 +192,7 @@ server <- function(input, output, session) {
   output$wrong <- renderText({
     values$wrong_letters
   })
+
   output$vowels_remaining <- renderText({
     if (values$vowels_remaining) {
       paste("Vowels Remaining")
@@ -128,7 +209,7 @@ server <- function(input, output, session) {
 
   # Handle letter guesses
   observeEvent(input$guess, {
-    guess <- toupper(trimws(input$letter_guess)) # Get the guessed letter
+    guess <- toupper(trimws(input$letter_guess))
     if (nchar(guess) != 1 || !grepl("[A-Z]", guess)) {
       values$feedback_message <- "Please enter a single letter."
       return()
@@ -141,25 +222,24 @@ server <- function(input, output, session) {
       isolate({
         values$revealed_positions[indices] <- TRUE
         values$displayed_clue <- format_clue(values$current_clue, values$revealed_positions)
-        values$feedback_message <- "" # Clear feedback if the letter is correct
+        values$feedback_message <- ""
       })
       # Check if all vowels are revealed
-      if (all(values$revealed_positions[which(clue_chars %in% c("A", "E", "I", "O", "U"))])) {
+      vowel_positions <- which(clue_chars %in% c("A", "E", "I", "O", "U"))
+      if (length(vowel_positions) > 0 && all(values$revealed_positions[vowel_positions])) {
         values$vowels_remaining <- FALSE
       }
     } else {
-      values$feedback_message <- "Not in Puzzle." # Show feedback for incorrect guesses
+      values$feedback_message <- "Not in Puzzle."
       values$wrong_letters <- paste(values$wrong_letters, guess, ", ")
 
       # Clear the message after 3 seconds
-      if (!is.null(values$feedback_timer)) {
-        values$feedback_timer <- NULL
-      }
-      values$feedback_timer <- reactiveTimer(3000, session)
+      invalidateLater(3000, session)
       observe({
         isolate({
-          values$feedback_message <- ""
-          values$feedback_timer <- NULL
+          if (values$feedback_message == "Not in Puzzle.") {
+            values$feedback_message <- ""
+          }
         })
       })
     }
