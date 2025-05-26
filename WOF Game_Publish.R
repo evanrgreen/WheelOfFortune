@@ -61,7 +61,7 @@ ui <- fluidPage(
       }
 
       .puzzle-container {
-        background-color: #22B016;
+        background-color: #229019;
         padding: 30px;
         border-radius: 10px;
         margin: 20px 0;
