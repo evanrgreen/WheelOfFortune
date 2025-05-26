@@ -135,17 +135,32 @@ server <- function(input, output, session) {
   # Helper function: Format the clue with boxes around letters
   format_clue <- function(clue, revealed_positions) {
     clue_chars <- strsplit(clue, "")[[1]]
-    formatted <- sapply(seq_along(clue_chars), function(i) {
-      if (clue_chars[i] == " ") {
-        '<span class="space-separator"></span>'
-      } else if (clue_chars[i] %in% c("'", "-", ",", "!", "?", "&", ".", ":", ";")) {
-        paste0('<span class="punctuation">', clue_chars[i], "</span>")
-      } else if (revealed_positions[i]) {
-        paste0('<span class="letter-box">', clue_chars[i], "</span>")
-      } else {
-        '<span class="blank-box"></span>'
+    formatted <- character(0)
+    word_count <- 0
+
+    for (i in seq_along(clue_chars)) {
+      if (i == 1 || clue_chars[i - 1] == " ") {
+        # Starting a new word
+        if (clue_chars[i] != " ") {
+          word_count <- word_count + 1
+          # Add line break after every 2 words
+          if (word_count > 2 && word_count %% 2 == 1) {
+            formatted <- c(formatted, "<br>")
+          }
+        }
       }
-    })
+
+      if (clue_chars[i] == " ") {
+        formatted <- c(formatted, '<span class="space-separator"></span>')
+      } else if (clue_chars[i] %in% c("'", "-", ",", "!", "?", "&", ".", ":", ";")) {
+        formatted <- c(formatted, paste0('<span class="punctuation">', clue_chars[i], "</span>"))
+      } else if (revealed_positions[i]) {
+        formatted <- c(formatted, paste0('<span class="letter-box">', clue_chars[i], "</span>"))
+      } else {
+        formatted <- c(formatted, '<span class="blank-box"></span>')
+      }
+    }
+
     paste(formatted, collapse = "")
   }
 
